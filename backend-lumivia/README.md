@@ -1,11 +1,8 @@
 <a id="readme-top"></a>
 
-[![Java 17][java-shield]][java-url]
-[![Spring Boot][spring-shield]][spring-url]
-[![Gradle][gradle-shield]][gradle-url]
-[![PostgreSQL][postgres-shield]][postgres-url]
-[![Docker][docker-shield]][docker-url]
-[![Issues][issues-shield]][issues-url]
+<div align="center">
+  <img src="https://skillicons.dev/icons?i=java,spring,gradle,postgres,docker&perline=5" alt="Java, Spring Boot, Gradle, PostgreSQL, Docker" />
+</div>
 
 <br />
 <div align="center">
@@ -436,17 +433,3 @@ If you plan external contributions or public redistribution, add an explicit ope
 - [Best README Template](https://github.com/othneildrew/Best-README-Template) as structural inspiration.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- MARKDOWN LINKS -->
-[java-shield]: https://img.shields.io/badge/Java-17-007396?style=for-the-badge&logo=openjdk&logoColor=white
-[java-url]: https://openjdk.org/projects/jdk/17/
-[spring-shield]: https://img.shields.io/badge/Spring_Boot-3.3.4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white
-[spring-url]: https://spring.io/projects/spring-boot
-[gradle-shield]: https://img.shields.io/badge/Gradle-8.x-02303A?style=for-the-badge&logo=gradle&logoColor=white
-[gradle-url]: https://gradle.org/
-[postgres-shield]: https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white
-[postgres-url]: https://www.postgresql.org/
-[docker-shield]: https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white
-[docker-url]: https://www.docker.com/
-[issues-shield]: https://img.shields.io/github/issues/FerVarg24/LumivIA.svg?style=for-the-badge
-[issues-url]: https://github.com/FerVarg24/LumivIA/issues
