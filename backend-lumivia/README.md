@@ -1,325 +1,300 @@
-# LumivIA Backend
+<a id="readme-top"></a>
 
-Backend de LumivIA construido con Spring Boot 3, Java 17 y Gradle (Groovy DSL).
+[![Java 17][java-shield]][java-url]
+[![Spring Boot][spring-shield]][spring-url]
+[![Gradle][gradle-shield]][gradle-url]
+[![PostgreSQL][postgres-shield]][postgres-url]
+[![Docker][docker-shield]][docker-url]
+[![Issues][issues-shield]][issues-url]
 
-Este README esta pensado para que frontend pueda integrar todo el flujo solo con este documento.
+<br />
+<div align="center">
+  <h1 align="center">LumivIA Backend</h1>
 
-## Modulos activos
+  <p align="center">
+    Spring Boot backend for real-time urban emissions intelligence, healthy routing, and flood-aware mobility decisions in CDMX.
+    <br />
+    <a href="https://github.com/FerVarg24/LumivIA/tree/main/backend-lumivia"><strong>Explore the backend code</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/FerVarg24/LumivIA/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/FerVarg24/LumivIA/issues">Request Feature</a>
+  </p>
+</div>
 
-- `camera/`: camaras fijas (`GET /api/camaras`)
-- `vehicle/`: detecciones YOLO, pool activo con TTL, estado en tiempo real por WebSocket
-- `emissions/`: calculo de CO2, NOx, PM2.5 por tipo de vehiculo
-- `history/`: historico por camara y rango de fechas (`GET /api/historial`)
-- `routing/`: rutas rapida vs saludable con GraphHopper (`POST /api/ruta`)
-- `websocket/`: STOMP/SockJS (`/ws`, `/topic/camaras`)
-- `flood/`: prediccion de inundaciones con DEM + crowdsourcing (`GET /api/flood/*`)
+## Table of Contents
 
-## Requisitos
+- [About The Project](#about-the-project)
+  - [Why this backend is innovative](#why-this-backend-is-innovative)
+  - [Scope](#scope)
+- [Built With](#built-with)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Required data files](#required-data-files)
+  - [Configuration](#configuration)
+- [Usage](#usage)
+  - [Run in development mode](#run-in-development-mode)
+  - [Run with PostgreSQL](#run-with-postgresql)
+  - [Run with Docker](#run-with-docker)
+  - [Run with Docker Compose](#run-with-docker-compose)
+- [API Overview](#api-overview)
+  - [Core endpoints](#core-endpoints)
+  - [Example requests](#example-requests)
+  - [WebSocket contract](#websocket-contract)
+- [Project Structure](#project-structure)
+- [Deployment Notes](#deployment-notes)
+- [Open Source Vision](#open-source-vision)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
+## About The Project
+
+LumivIA Backend is the decision engine behind a city mobility platform focused on public health and risk-aware routing.
+
+It ingests vehicle detections in real time, estimates pollutants (CO2, NOx, PM2.5), maintains live camera state over WebSocket, and computes two route options between origin and destination:
+
+- Fast route optimized for travel time.
+- Healthy route optimized for lower exposure, and flood risk when rain is active.
+
+The backend is intentionally documented as an independent product. Frontend and companion services are maintained in separate repositories.
+
+### Why this backend is innovative
+
+- Fuses three data horizons in one routing decision: live emissions, historical emissions, and terrain/rain flood risk.
+- Applies interpolation (IDW) over camera influence zones instead of naive nearest-camera assumptions.
+- Exposes map-ready outputs (`[lng, lat]` coordinates and GeoJSON layers) to reduce frontend glue code.
+- Supports a real-time mobility loop: detection event -> emissions update -> websocket broadcast -> route recalculation.
+- Balances practical deployment with heavy geospatial workloads (GraphHopper + DEM + cloud runtime).
+
+### Scope
+
+This repository segment covers only the backend service (`backend-lumivia/`):
+
+- REST API
+- WebSocket broker
+- Routing engine integration
+- Flood risk module
+- Persistence and runtime state
+- Containerization and cloud deployment artifacts
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Built With
+
+- [Java 17](https://openjdk.org/projects/jdk/17/)
+- [Spring Boot 3.3](https://spring.io/projects/spring-boot)
+- [Gradle 8](https://gradle.org/)
+- [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
+- [PostgreSQL](https://www.postgresql.org/)
+- [H2](https://www.h2database.com/html/main.html) (dev profile)
+- [GraphHopper 9.1](https://github.com/graphhopper/graphhopper)
+- [GeoTools 31](https://geotools.org/)
+- [JTS](https://locationtech.github.io/jts/)
+- [Docker](https://www.docker.com/)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Architecture
+
+High-level flow:
+
+1. Detection ingestion (`POST /api/vehiculos/deteccion`) stores historical data and updates active camera pool.
+2. Emissions are aggregated into runtime camera state and published to `/topic/camaras`.
+3. Routing (`POST /api/ruta`) computes fast and healthy alternatives with GraphHopper.
+4. Healthy scoring combines:
+   - Active emissions
+   - Historical emissions (30-day lookback)
+   - Flood penalties when `raining=true`
+5. Flood risk (`/api/flood/*`) combines DEM elevation and user flood reports.
+
+Design choices:
+
+- Bounded geography for CDMX requests.
+- Explicit DTO contracts for frontend interoperability.
+- Runtime pools for low-latency updates, persistence for traceability.
+- GeoJSON endpoints dedicated to map rendering pipelines.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Getting Started
+
+### Prerequisites
 
 - Java 17
-- PostgreSQL (default) o H2 (perfil `dev`)
+- Git
+- Docker (optional, for container runs)
+- PostgreSQL (optional in dev, required for default profile)
 
-## Ejecutar backend
+### Installation
 
-### PowerShell (Windows, recomendado)
+1. Clone the repository:
 
-```powershell
-.\gradlew.bat bootRun --args="--spring.profiles.active=dev"
+```bash
+git clone https://github.com/FerVarg24/LumivIA.git
 ```
 
-### Bash (Linux/macOS)
+2. Enter backend directory:
+
+```bash
+cd LumivIA/backend-lumivia
+```
+
+3. Make sure Gradle wrapper is executable (Linux/macOS):
+
+```bash
+chmod +x gradlew
+```
+
+### Required data files
+
+Routing and flood modules depend on large geospatial datasets that are intentionally excluded from git.
+
+| Path | Purpose | Notes |
+|------|---------|-------|
+| `data/cdmx.osm.pbf` | OSM network for GraphHopper | Required for `/api/ruta` |
+| `data/elevation/cdmx_dem.tif` | DEM for elevation-based flood risk | Required for elevation risk layer |
+| `data/graph-cache/` | GraphHopper cache | Auto-generated on first import |
+
+Download OSM data from:
+
+- https://download.geofabrik.de/north-america/mexico.html
+
+Important runtime notes:
+
+- First GraphHopper import may take several minutes.
+- `bootRun` is configured with `-Xmx4g` for routing workloads.
+
+### Configuration
+
+Main properties are defined in `src/main/resources/application.yml`.
+
+Environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | HTTP server port |
+| `DB_HOST` | `localhost` | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_NAME` | `lumivia` | Database name |
+| `DB_USER` | `postgres` | Database user |
+| `DB_PASSWORD` | `postgres` | Database password |
+| `LUMIVIA_OSM_FILE` | `./data/cdmx.osm.pbf` | OSM file path |
+| `LUMIVIA_GRAPH_CACHE` | `./data/graph-cache` | GraphHopper cache path |
+| `LUMIVIA_FLOOD_DEM_FILE` | `./data/elevation/cdmx_dem.tif` | DEM file path |
+
+`dev` profile uses H2 in-memory database via `application-dev.yml`.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Usage
+
+### Run in development mode
 
 ```bash
 SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
 ```
 
-### PostgreSQL (perfil default)
-
-Variables sugeridas:
-
-```bash
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=lumivia
-export DB_USER=postgres
-export DB_PASSWORD=postgres
-./gradlew bootRun
-```
-
-H2 Console en `dev`:
+H2 console (dev only):
 
 - URL: `http://localhost:8080/h2-console`
 - JDBC URL: `jdbc:h2:mem:lumivia`
 - User: `sa`
 
-## Contratos para frontend
+### Run with PostgreSQL
 
-### 1) GET `/api/camaras`
-
-Devuelve camaras fijas para pintar en mapa.
-
-```json
-[
-  {
-    "nombre": "camara_insurgentes_reforma",
-    "lat": 19.4326,
-    "lng": -99.1332,
-    "descripcion": "Insurgentes y Reforma"
-  }
-]
+```bash
+DB_HOST=localhost \
+DB_PORT=5432 \
+DB_NAME=lumivia \
+DB_USER=postgres \
+DB_PASSWORD=postgres \
+./gradlew bootRun
 ```
 
-### 2) POST `/api/vehiculos/deteccion`
+### Run with Docker
 
-Entrada:
-
-```json
-{
-  "camara": "camara_insurgentes_reforma",
-  "timestamp": "2026-04-07T10:23:45Z",
-  "tipo": "auto",
-  "color": "#FF0000",
-  "segundos_en_pantalla": 4.2
-}
+```bash
+docker build -t lumivia-backend:latest .
+docker run --rm -p 8080:8080 lumivia-backend:latest
 ```
 
-`tipo` valido: `auto`, `moto`, `camion`, `bici`, `peaton`.
+### Run with Docker Compose
 
-### 3) WebSocket STOMP `/topic/camaras`
+Development profile:
 
-- Endpoint SockJS/STOMP: `/ws`
-- Topic: `/topic/camaras`
+```bash
+docker compose up backend
+```
 
-El backend emite en dos casos:
+Production profile with PostgreSQL service:
 
-1. Entra vehiculo nuevo (`vehiculo_nuevo` con datos)
-2. Expira vehiculo en scheduler (`vehiculo_nuevo: null`)
+```bash
+docker compose --profile prod up backend-prod postgres
+```
 
-Payload con vehiculo nuevo:
+### Quick manual verification
 
-```json
-{
-  "camara": "camara_insurgentes_reforma",
-  "lat": 19.4326,
-  "lng": -99.1332,
-  "vehiculo_nuevo": {
-    "id": "a3f1c2d4-...",
-    "color": "#FF0000",
+- HTTP collection: `http/lumivia.http`
+- Postman collection: `postman/LumivIA-Backend.postman_collection.json`
+- WebSocket test page: `http://localhost:8080/ws-test.html`
+- Flood test page: `http://localhost:8080/flood-test.html`
+- Mapbox flood page: `http://localhost:8080/mapbox-flood.html`
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## API Overview
+
+### Core endpoints
+
+| Module | Method | Endpoint | Description |
+|--------|--------|----------|-------------|
+| Cameras | `GET` | `/api/camaras` | List fixed cameras |
+| Vehicle | `POST` | `/api/vehiculos/deteccion` | Register detection and update camera state |
+| History | `GET` | `/api/historial` | Query detections by camera and time range |
+| Routing | `POST` | `/api/ruta` | Compute fast and healthy routes |
+| Flood | `GET` | `/api/flood/risk` | Flood risk at a point |
+| Flood | `POST` | `/api/flood/reports` | Create flood report |
+| Flood | `GET` | `/api/flood/reports` | List active flood reports |
+| Flood | `POST` | `/api/flood/reports/{id}/upvote` | Confirm an existing report |
+| Flood GeoJSON | `GET` | `/api/flood/geojson/grid` | Heatmap-ready flood risk grid |
+| Flood GeoJSON | `GET` | `/api/flood/geojson/reports` | Report points as GeoJSON |
+| Flood GeoJSON | `GET` | `/api/flood/geojson/bounds` | Coverage polygon |
+
+### Example requests
+
+Create vehicle detection:
+
+```bash
+curl -X POST "http://localhost:8080/api/vehiculos/deteccion" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "camara": "camara_insurgentes_reforma",
+    "timestamp": "2026-04-08T10:23:45Z",
     "tipo": "auto",
-    "ttl": 4.2
-  },
-  "opacidad_humo": 0.73,
-  "color_humo": "#000000",
-  "emisiones": {
-    "co2": 364.8,
-    "nox": 1.44,
-    "pm25": 0.04
-  }
-}
+    "color": "#FF0000",
+    "segundos_en_pantalla": 4.2
+  }'
 ```
 
-Payload por expiracion:
-
-```json
-{
-  "camara": "camara_insurgentes_reforma",
-  "lat": 19.4326,
-  "lng": -99.1332,
-  "vehiculo_nuevo": null,
-  "opacidad_humo": 0.45,
-  "color_humo": "#000000",
-  "emisiones": {
-    "co2": 225.0,
-    "nox": 0.89,
-    "pm25": 0.03
-  }
-}
-```
-
-Notas frontend:
-
-- `vehiculo_nuevo.id` es UUID unico por vehiculo activo.
-- Usa `vehiculo_nuevo.ttl` para animar/remover localmente en mapa.
-- Cuando `vehiculo_nuevo` es `null`, solo actualiza humo/opacidad/emisiones.
-
-### 4) GET `/api/historial`
+Calculate route:
 
 ```bash
-curl "http://localhost:8080/api/historial?camara=camara_insurgentes_reforma&desde=2026-04-07T00:00:00Z&hasta=2026-04-07T23:59:59Z"
+curl -X POST "http://localhost:8080/api/ruta" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "origen": {"lat": 19.4326, "lng": -99.1332},
+    "destino": {"lat": 19.4500, "lng": -99.1500},
+    "perfil": "PEATON",
+    "raining": true
+  }'
 ```
 
-Respuesta: lista de detecciones historicas con emisiones calculadas.
-
-### 5) POST `/api/ruta`
-
-Request (no cambia):
-
-```json
-{
-  "origen": {"lat": 19.4326, "lng": -99.1332},
-  "destino": {"lat": 19.4500, "lng": -99.1500},
-  "perfil": "PEATON"
-}
-```
-
-Response (siempre dos rutas):
-
-```json
-{
-  "ruta_rapida": {
-    "distancia_km": 0.33,
-    "tiempo_estimado_min": 4,
-    "nivel_riesgo": "alto",
-    "coordenadas": [[-99.1332, 19.4326], [-99.1340, 19.4331]],
-    "emisiones_ruta": {
-      "co2": 17700.0,
-      "nox": 47.2,
-      "pm25": 1.18
-    },
-    "descripcion": "Ruta mas corta con carga alta: CO2 actual 840.0 g y CO2 historico 320.0 g. Foco dominante: camara_insurgentes_reforma (920.0 g CO2 estimados)."
-  },
-  "ruta_saludable": {
-    "distancia_km": 0.51,
-    "tiempo_estimado_min": 6,
-    "nivel_riesgo": "bajo",
-    "coordenadas": [[-99.1332, 19.4326], [-99.1355, 19.4338]],
-    "emisiones_ruta": {
-      "co2": 430.0,
-      "nox": 1.6,
-      "pm25": 0.06
-    },
-    "descripcion": "Ruta saludable recomendada: reduce 1270.0 g CO2 (74.7%), evita carga actual e historica, +2 min. Se evita el foco principal de camara_insurgentes_reforma."
-  },
-  "ahorro_co2": 1270.0,
-  "tiempo_extra_min": 2
-}
-```
-
-Notas frontend claves:
-
-- `coordenadas` estan en formato `[lng, lat]` (Mapbox).
-- `nivel_riesgo` se calcula por CO2 total de cada ruta:
-  - `bajo` < 200 g
-  - `medio` < 500 g
-  - `alto` >= 500 g
-- `ahorro_co2` y `tiempo_extra_min` son las diferencias entre rapida y saludable.
-- El backend nunca recomienda una ruta "saludable" peor en CO2 que la rapida.
-- Si las alternativas salen peores o iguales, ambas rutas pueden coincidir y `ahorro_co2` sera `0.0`.
-
-## Como decide el motor de routing
-
-Resumen de decision actual:
-
-1. Calcula `ruta_rapida` con GraphHopper.
-2. Estima exposicion en la ruta usando dos capas:
-   - emisiones activas (tiempo real)
-   - emisiones historicas (promedio ultimos 30 dias por camara)
-3. Interpola espacialmente con IDW (no solo camara mas cercana):
-   - 4 camaras vecinas
-   - potencia 2.0
-   - radio de influencia por camara: 50 m
-4. Solo busca/forza alternativa saludable si detecta carga alta:
-   - CO2 actual >= 200 g o CO2 historico >= 200 g
-5. Entre alternativas, escoge la de menor puntaje saludable:
-   - `peso = distancia + (co2 * 5000)` para `PEATON`/`COMBINADA`
-6. Si no hay alternativa real, devuelve nota:
-   - `No hay ruta alternativa disponible en esta zona`
-
-## Perfiles de ruta
-
-- `PEATON`: prioriza menor exposicion a emisiones.
-- `CONDUCTOR`: hoy queda orientado a distancia/flood (flood todavia pendiente).
-- `COMBINADA`: balancea emisiones y flood (flood pendiente).
-
-## Configuracion OSM/GraphHopper
-
-En `application.yml`:
-
-```yaml
-lumivia:
-  osm-file: ./data/cdmx.osm.pbf
-  graph-cache: ./data/graph-cache
-```
-
-Descarga OSM (Geofabrik):
-
-- https://download.geofabrik.de/north-america/mexico.html
-
-Coloca el archivo en `./data/cdmx.osm.pbf`.
-
-Si falta el archivo, `POST /api/ruta` responde `503`.
-
-Importante en primer arranque:
-
-- El primer `importOrLoad` puede tardar varios minutos.
-- Hasta que termine, el modulo puede no estar disponible.
-
-## Datos de prueba
-
-- Seed automatico: `src/main/resources/data.sql`
-- Pruebas rapidas:
-  - `http/lumivia.http`
-  - `postman/LumivIA-Backend.postman_collection.json`
-  - `http://localhost:8080/ws-test.html`
-
-## Checklist rapido para frontend
-
-1. Cargar camaras (`GET /api/camaras`) y pintarlas en mapa.
-2. Suscribirse a `/topic/camaras` por STOMP.
-3. En evento con `vehiculo_nuevo`, agregar marker temporal por `id` y TTL.
-4. En evento con `vehiculo_nuevo: null`, solo refrescar humo/opacidad/emisiones.
-5. Para rutas, pedir `POST /api/ruta` y pintar dos lineas:
-   - rapida (estilo base)
-   - saludable (estilo destacado)
-6. Mostrar CTA con `ahorro_co2` y `tiempo_extra_min`.
-
----
-
-## Modulo de Inundaciones (flood/)
-
-Sistema de prediccion de riesgo de inundacion que combina:
-- **Datos de elevacion (DEM)**: SRTM 30m de NASA para identificar zonas bajas
-- **Reportes de usuarios (crowdsourcing)**: Puntos reportados por la comunidad
-
-### Comportamiento clave
-
-- El sistema de inundaciones **SOLO se activa cuando `raining=true`**
-- Si no esta lloviendo, el riesgo de inundacion es 0 en todos los puntos
-- Formula de riesgo: `riesgo = (0.4 * elevationRisk) + (0.6 * reportRisk)`
-
----
-
-## Endpoints de Inundaciones
-
-### 6) GET `/api/flood/risk`
-
-Consulta el riesgo de inundacion en un punto especifico.
-
-```bash
-curl "http://localhost:8080/api/flood/risk?lat=19.4326&lng=-99.1332&raining=true"
-```
-
-Respuesta:
-
-```json
-{
-  "lat": 19.4326,
-  "lng": -99.1332,
-  "risk": 0.42,
-  "descripcion": "Zona con riesgo moderado - proceda con precaucion",
-  "nivel_riesgo": "medio"
-}
-```
-
-| Parametro | Tipo | Requerido | Default | Descripcion |
-|-----------|------|-----------|---------|-------------|
-| `lat` | double | Si | - | Latitud (19.0-19.7) |
-| `lng` | double | Si | - | Longitud (-99.4 a -98.9) |
-| `raining` | boolean | No | false | Si esta lloviendo |
-
-### 7) POST `/api/flood/reports`
-
-Crear un reporte de inundacion (crowdsourcing anonimo).
+Create flood report:
 
 ```bash
 curl -X POST "http://localhost:8080/api/flood/reports" \
@@ -328,395 +303,150 @@ curl -X POST "http://localhost:8080/api/flood/reports" \
     "lat": 19.4326,
     "lng": -99.1332,
     "severity": "MODERADO",
-    "description": "Calle inundada, agua hasta la rodilla"
+    "description": "Calle inundada"
   }'
 ```
 
-Valores de `severity`:
-- `LEVE` - Encharcamiento menor (peso 0.3)
-- `MODERADO` - Calle inundada (peso 0.6)
-- `SEVERO` - Inundacion peligrosa (peso 1.0)
+### WebSocket contract
 
-Respuesta:
+- SockJS/STOMP endpoint: `/ws`
+- Topic: `/topic/camaras`
+- Event model:
+  - `vehiculo_nuevo` present when a new vehicle enters active pool.
+  - `vehiculo_nuevo` null when TTL expiration updates camera aggregate only.
 
-```json
-{
-  "id": 1,
-  "lat": 19.4326,
-  "lng": -99.1332,
-  "severity": "MODERADO",
-  "description": "Calle inundada, agua hasta la rodilla",
-  "timestamp": "2026-04-07T22:30:00Z",
-  "expiresAt": "2026-04-08T04:30:00Z",
-  "upvotes": 0
-}
+Vehicle types accepted by API:
+
+- `auto`
+- `moto`
+- `camion`
+- `bici`
+- `peaton`
+
+Important mapping detail:
+
+- Route coordinates are returned as `[lng, lat]` for direct Mapbox compatibility.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Project Structure
+
+```text
+backend-lumivia/
+├── src/main/java/com/lumivia/
+│   ├── camera/
+│   ├── vehicle/
+│   ├── emissions/
+│   ├── history/
+│   ├── routing/
+│   ├── flood/
+│   ├── websocket/
+│   └── common/
+├── src/main/resources/
+│   ├── application.yml
+│   ├── application-dev.yml
+│   ├── data.sql
+│   └── static/
+├── Dockerfile
+├── docker-compose.yml
+└── build.gradle
 ```
 
-### 8) GET `/api/flood/reports`
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Obtener reportes activos (no expirados).
+## Deployment Notes
+
+The backend is containerized and ready for cloud deployment.
+
+- Multi-stage Docker build (`Dockerfile`)
+- Non-root runtime user in container
+- Externalized runtime config through environment variables
+- Verified deployment path on IBM Cloud Code Engine with IBM Container Registry
+
+Container registry naming example:
 
 ```bash
-# Todos los reportes activos
-curl "http://localhost:8080/api/flood/reports"
-
-# Filtrar por bounding box
-curl "http://localhost:8080/api/flood/reports?minLat=19.4&maxLat=19.5&minLng=-99.2&maxLng=-99.1"
+us.icr.io/<namespace>/lumivia-backend:latest
 ```
 
-### 9) POST `/api/flood/reports/{id}/upvote`
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Confirmar/validar un reporte existente (incrementa confiabilidad).
+## Open Source Vision
 
-```bash
-curl -X POST "http://localhost:8080/api/flood/reports/1/upvote"
-```
+LumivIA Backend is designed to be useful beyond one deployment or one city pilot.
 
----
+Core principles:
 
-## Endpoints GeoJSON para Mapbox
+- Transparent contracts over hidden coupling.
+- Reproducible local setup and cloud portability.
+- Public-health-first routing criteria, not just shortest path optimization.
+- Modular codebase ready for independent contributors.
 
-Estos endpoints devuelven datos en formato GeoJSON listo para consumir en Mapbox GL JS.
+What makes it valuable for open collaboration:
 
-### 10) GET `/api/flood/geojson/grid`
+- Real urban-problem context (emissions + climate risk).
+- Practical geospatial stack with production constraints.
+- Clean separation between domain modules and transport layer.
 
-Devuelve un grid de ~200 puntos cubriendo CDMX con el riesgo de inundacion.
-**Ideal para renderizar como heatmap.**
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```bash
-# Con lluvia (calcula riesgo real)
-curl "http://localhost:8080/api/flood/geojson/grid?raining=true"
+## Contributing
 
-# Sin lluvia (todos los riesgos son 0)
-curl "http://localhost:8080/api/flood/geojson/grid?raining=false"
-```
+Contributions are welcome.
 
-Respuesta:
+1. Fork the repository.
+2. Create a feature branch (`feature/your-change`).
+3. Commit with clear intent and scope.
+4. Open a pull request with context, impact, and test notes.
 
-```json
-{
-  "type": "FeatureCollection",
-  "metadata": {
-    "raining": true,
-    "pointCount": 136,
-    "gridRows": 14,
-    "gridCols": 14,
-    "bounds": {
-      "latMin": 19.2,
-      "latMax": 19.6,
-      "lngMin": -99.35,
-      "lngMax": -98.95
-    },
-    "generatedAt": "2026-04-07T22:30:00Z"
-  },
-  "features": [
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-99.1332, 19.4326]
-      },
-      "properties": {
-        "risk": 0.42,
-        "riskLevel": "medio",
-        "raining": true,
-        "weight": 0.63
-      }
-    }
-  ]
-}
-```
+Recommended contribution areas:
 
-### 11) GET `/api/flood/geojson/reports`
+- Automated testing coverage
+- OpenAPI specification
+- Auth and rate limiting
+- Observability and metrics
+- Data quality tooling for detections and reports
 
-Devuelve los reportes de usuarios como GeoJSON FeatureCollection.
-**Ideal para renderizar como circulos/markers.**
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```bash
-curl "http://localhost:8080/api/flood/geojson/reports"
-```
+## Roadmap
 
-Respuesta:
+- [ ] Add automated integration tests for routing and flood modules.
+- [ ] Publish OpenAPI docs for all REST endpoints.
+- [ ] Introduce authentication and service-to-service authorization.
+- [ ] Add observability dashboards and alerting baselines.
+- [ ] Publish benchmark profile for GraphHopper and flood calculations.
 
-```json
-{
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "id": 1,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-99.1332, 19.4326]
-      },
-      "properties": {
-        "id": 1,
-        "severity": "MODERADO",
-        "severityValue": 0.6,
-        "description": "Calle inundada",
-        "upvotes": 3,
-        "createdAt": "2026-04-07T22:30:00Z",
-        "expiresAt": "2026-04-08T04:30:00Z",
-        "color": "#FF9800",
-        "radius": 12
-      }
-    }
-  ]
-}
-```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### 12) GET `/api/flood/geojson/bounds`
+## License
 
-Devuelve el poligono de cobertura del sistema de inundaciones.
+No `LICENSE` file is currently included in this repository.
 
-```bash
-curl "http://localhost:8080/api/flood/geojson/bounds"
-```
+If you plan external contributions or public redistribution, add an explicit open source license (for example MIT, Apache-2.0, or GPL-3.0) before release.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Integracion Mapbox GL JS - Codigo Completo
+## Acknowledgments
 
-### Paso 1: Agregar sources
+- [GraphHopper](https://github.com/graphhopper/graphhopper) for routing engine capabilities.
+- [Geofabrik](https://download.geofabrik.de/) for OpenStreetMap extracts.
+- [NASA SRTM](https://www.earthdata.nasa.gov/) data used through DEM workflows.
+- [GeoTools](https://geotools.org/) and [JTS](https://locationtech.github.io/jts/) for geospatial processing.
+- [Best README Template](https://github.com/othneildrew/Best-README-Template) as structural inspiration.
 
-```javascript
-map.on('load', () => {
-  // Source para el heatmap de riesgo
-  map.addSource('flood-risk', {
-    type: 'geojson',
-    data: 'http://localhost:8080/api/flood/geojson/grid?raining=false'
-  });
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-  // Source para los reportes de usuarios
-  map.addSource('flood-reports', {
-    type: 'geojson',
-    data: 'http://localhost:8080/api/flood/geojson/reports'
-  });
-});
-```
-
-### Paso 2: Agregar heatmap layer (riesgo de inundacion)
-
-```javascript
-map.addLayer({
-  id: 'flood-heatmap',
-  type: 'heatmap',
-  source: 'flood-risk',
-  paint: {
-    // Peso basado en el valor de riesgo
-    'heatmap-weight': [
-      'interpolate', ['linear'],
-      ['get', 'risk'],
-      0, 0,
-      0.3, 0.3,
-      0.6, 0.6,
-      1, 1
-    ],
-    // Intensidad aumenta con zoom
-    'heatmap-intensity': [
-      'interpolate', ['linear'],
-      ['zoom'],
-      9, 0.5,
-      12, 1,
-      15, 1.5
-    ],
-    // Rampa de colores: verde (seguro) -> rojo (peligro)
-    'heatmap-color': [
-      'interpolate', ['linear'],
-      ['heatmap-density'],
-      0, 'rgba(0, 255, 0, 0)',
-      0.2, 'rgba(0, 255, 0, 0.4)',
-      0.4, 'rgba(255, 255, 0, 0.6)',
-      0.6, 'rgba(255, 165, 0, 0.7)',
-      0.8, 'rgba(255, 69, 0, 0.8)',
-      1, 'rgba(255, 0, 0, 0.9)'
-    ],
-    // Radio aumenta con zoom
-    'heatmap-radius': [
-      'interpolate', ['linear'],
-      ['zoom'],
-      9, 20,
-      12, 30,
-      15, 50
-    ],
-    'heatmap-opacity': 0.8
-  }
-});
-```
-
-### Paso 3: Agregar layer de reportes (circulos)
-
-```javascript
-map.addLayer({
-  id: 'flood-reports-circle',
-  type: 'circle',
-  source: 'flood-reports',
-  paint: {
-    // Usa las propiedades del GeoJSON directamente
-    'circle-radius': ['get', 'radius'],
-    'circle-color': ['get', 'color'],
-    'circle-stroke-width': 2,
-    'circle-stroke-color': '#ffffff',
-    'circle-opacity': 0.8
-  }
-});
-```
-
-### Paso 4: Actualizar cuando cambie el estado de lluvia
-
-```javascript
-let isRaining = false;
-
-function toggleRain(raining) {
-  isRaining = raining;
-  
-  // Recargar el grid con el nuevo estado
-  fetch(`http://localhost:8080/api/flood/geojson/grid?raining=${isRaining}`)
-    .then(res => res.json())
-    .then(data => {
-      map.getSource('flood-risk').setData(data);
-    });
-}
-
-// Ejemplo: activar modo lluvia
-toggleRain(true);
-```
-
-### Paso 5: Popup al hacer clic en un reporte
-
-```javascript
-map.on('click', 'flood-reports-circle', (e) => {
-  const props = e.features[0].properties;
-  const coords = e.features[0].geometry.coordinates;
-  
-  new mapboxgl.Popup()
-    .setLngLat(coords)
-    .setHTML(`
-      <strong>Reporte de Inundacion</strong><br>
-      Severidad: ${props.severity}<br>
-      ${props.description || 'Sin descripcion'}<br>
-      <small>${props.upvotes} confirmaciones</small>
-    `)
-    .addTo(map);
-});
-
-// Cambiar cursor al pasar sobre reportes
-map.on('mouseenter', 'flood-reports-circle', () => {
-  map.getCanvas().style.cursor = 'pointer';
-});
-map.on('mouseleave', 'flood-reports-circle', () => {
-  map.getCanvas().style.cursor = '';
-});
-```
-
-### Paso 6: Crear nuevo reporte desde el mapa
-
-```javascript
-let reportMode = false;
-
-function enableReportMode() {
-  reportMode = true;
-  map.getCanvas().style.cursor = 'crosshair';
-}
-
-map.on('click', (e) => {
-  if (!reportMode) return;
-  
-  const report = {
-    lat: e.lngLat.lat,
-    lng: e.lngLat.lng,
-    severity: 'MODERADO', // O mostrar selector al usuario
-    description: prompt('Descripcion (opcional):')
-  };
-  
-  fetch('http://localhost:8080/api/flood/reports', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(report)
-  })
-  .then(res => res.json())
-  .then(() => {
-    // Recargar reportes
-    fetch('http://localhost:8080/api/flood/geojson/reports')
-      .then(res => res.json())
-      .then(data => map.getSource('flood-reports').setData(data));
-    
-    reportMode = false;
-    map.getCanvas().style.cursor = '';
-  });
-});
-```
-
----
-
-## Integracion con Routing (raining parameter)
-
-El endpoint de rutas ahora acepta `raining` para considerar zonas de inundacion:
-
-### POST `/api/ruta` con lluvia
-
-```json
-{
-  "origen": {"lat": 19.4326, "lng": -99.1332},
-  "destino": {"lat": 19.4500, "lng": -99.1500},
-  "perfil": "CONDUCTOR",
-  "raining": true
-}
-```
-
-Cuando `raining: true`:
-- La ruta saludable evita zonas con riesgo de inundacion > 0.5
-- La respuesta incluye `"raining": true` para confirmar
-
-```json
-{
-  "ruta_rapida": { ... },
-  "ruta_saludable": { ... },
-  "ahorro_co2": 450.0,
-  "tiempo_extra_min": 3,
-  "raining": true
-}
-```
-
----
-
-## Colores y estilos recomendados
-
-### Severidad de reportes
-
-| Severidad | Color | Radio | Descripcion |
-|-----------|-------|-------|-------------|
-| LEVE | `#FFC107` (amarillo) | 8px | Encharcamiento |
-| MODERADO | `#FF9800` (naranja) | 12px | Calle inundada |
-| SEVERO | `#F44336` (rojo) | 16px | Peligroso |
-
-### Niveles de riesgo en heatmap
-
-| Riesgo | Color | Descripcion |
-|--------|-------|-------------|
-| 0.0 - 0.3 | Verde | Bajo riesgo |
-| 0.3 - 0.6 | Amarillo | Riesgo medio |
-| 0.6 - 0.8 | Naranja | Riesgo alto |
-| 0.8 - 1.0 | Rojo | Riesgo severo |
-
----
-
-## Pagina de pruebas
-
-Disponible en: `http://localhost:8080/mapbox-flood.html`
-
-(Requiere reemplazar `YOUR_MAPBOX_TOKEN_HERE` con tu token real de Mapbox)
-
----
-
-## Checklist de integracion inundaciones
-
-1. [ ] Agregar toggle "Esta lloviendo" en UI
-2. [ ] Agregar source `flood-risk` con endpoint `/api/flood/geojson/grid`
-3. [ ] Agregar layer `heatmap` para visualizar riesgo
-4. [ ] Agregar source `flood-reports` con endpoint `/api/flood/geojson/reports`
-5. [ ] Agregar layer `circle` para mostrar reportes
-6. [ ] Implementar click en reportes para mostrar popup
-7. [ ] Implementar modo "reportar inundacion" con POST
-8. [ ] Pasar `raining: true/false` en requests de `/api/ruta`
-9. [ ] Actualizar datos cuando cambie estado de lluvia
+<!-- MARKDOWN LINKS -->
+[java-shield]: https://img.shields.io/badge/Java-17-007396?style=for-the-badge&logo=openjdk&logoColor=white
+[java-url]: https://openjdk.org/projects/jdk/17/
+[spring-shield]: https://img.shields.io/badge/Spring_Boot-3.3.4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white
+[spring-url]: https://spring.io/projects/spring-boot
+[gradle-shield]: https://img.shields.io/badge/Gradle-8.x-02303A?style=for-the-badge&logo=gradle&logoColor=white
+[gradle-url]: https://gradle.org/
+[postgres-shield]: https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white
+[postgres-url]: https://www.postgresql.org/
+[docker-shield]: https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white
+[docker-url]: https://www.docker.com/
+[issues-shield]: https://img.shields.io/github/issues/FerVarg24/LumivIA.svg?style=for-the-badge
+[issues-url]: https://github.com/FerVarg24/LumivIA/issues
