@@ -18,19 +18,19 @@
 
 <div align="center">
 
-![Java](https://img.shields.io/badge/Java-17-007396?style=for-the-badge&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
-![Gradle](https://img.shields.io/badge/Gradle-8.x-02303A?style=for-the-badge&logo=gradle&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![H2](https://img.shields.io/badge/H2-Dev_Profile-09476B?style=for-the-badge)
-![JPA](https://img.shields.io/badge/Spring_Data_JPA-ORM-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
-![WebSocket](https://img.shields.io/badge/WebSocket-STOMP%20%2B%20SockJS-FF6B6B?style=for-the-badge)
-![GraphHopper](https://img.shields.io/badge/GraphHopper-9.1-4CAF50?style=for-the-badge)
-![GeoTools](https://img.shields.io/badge/GeoTools-31.3-2E7D32?style=for-the-badge)
-![JTS](https://img.shields.io/badge/JTS-Geometry-455A64?style=for-the-badge)
-![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![IBM Cloud](https://img.shields.io/badge/IBM_Cloud-Code_Engine-1261FE?style=for-the-badge&logo=ibmcloud&logoColor=white)
-![IBM ICR](https://img.shields.io/badge/IBM_Container_Registry-ICR-052FAD?style=for-the-badge&logo=ibm&logoColor=white)
+![Java](https://img.shields.io/badge/Java-17-007396?style=for-the-badge&logo=openjdk&logoColor=white&labelColor=007396)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white&labelColor=6DB33F)
+![Gradle](https://img.shields.io/badge/Gradle-8.x-02303A?style=for-the-badge&logo=gradle&logoColor=white&labelColor=02303A)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white&labelColor=336791)
+![H2](https://img.shields.io/badge/H2-Dev_Profile-09476B?style=for-the-badge&labelColor=09476B)
+![JPA](https://img.shields.io/badge/Spring_Data_JPA-ORM-6DB33F?style=for-the-badge&logo=spring&logoColor=white&labelColor=6DB33F)
+![WebSocket](https://img.shields.io/badge/WebSocket-STOMP%20%2B%20SockJS-FF6B6B?style=for-the-badge&labelColor=FF6B6B)
+![GraphHopper](https://img.shields.io/badge/GraphHopper-9.1-4CAF50?style=for-the-badge&labelColor=4CAF50)
+![GeoTools](https://img.shields.io/badge/GeoTools-31.3-2E7D32?style=for-the-badge&labelColor=2E7D32)
+![JTS](https://img.shields.io/badge/JTS-Geometry-455A64?style=for-the-badge&labelColor=455A64)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=2496ED)
+![IBM Cloud](https://img.shields.io/badge/IBM_Cloud-Code_Engine-1261FE?style=for-the-badge&logo=ibmcloud&logoColor=white&labelColor=1261FE)
+![IBM ICR](https://img.shields.io/badge/IBM_Container_Registry-ICR-052FAD?style=for-the-badge&logo=ibm&logoColor=white&labelColor=052FAD)
 
 </div>
 
