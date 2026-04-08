@@ -1,0 +1,28 @@
+# Build artifacts
+.gradle/
+build/
+out/
+*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Docs and tests (not needed in image)
+README.md
+AGENTS.md
+http/
+postman/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+startup.log

@@ -4,4 +4,15 @@ out/
 *.iml
 .idea/
 .vscode/
+
+# Data files - managed separately (too large for git)
+# Download from: https://download.geofabrik.de/north-america/mexico.html
+# Required files:
+#   - data/cdmx.osm.pbf (~104MB)
+#   - data/elevation/cdmx_dem.tif (~58MB)
+#   - data/graph-cache/ (generated on first run)
 /data/
+
+# Logs
+*.log
+startup.log

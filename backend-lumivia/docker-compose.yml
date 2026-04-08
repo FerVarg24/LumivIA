@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: lumivia-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - JAVA_OPTS=-Xmx4g -Xms1g
+    # For development: mount local data to avoid rebuilding image
+    # volumes:
+    #   - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # GraphHopper needs time to initialize
+
+  # Production setup with PostgreSQL
+  backend-prod:
+    build: .
+    container_name: lumivia-backend-prod
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTS=-Xmx4g -Xms1g
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=lumivia
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - prod
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: lumivia-postgres
+    environment:
+      - POSTGRES_DB=lumivia
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - prod
+
+volumes:
+  postgres_data:
