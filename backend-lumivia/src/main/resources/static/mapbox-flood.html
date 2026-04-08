@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LumivIA - Mapa de Inundaciones</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        
+        .control-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1;
+            min-width: 280px;
+        }
+        
+        .control-panel h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 26px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #2196F3;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        
+        .toggle-label {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .rain-icon { font-size: 20px; }
+        
+        .layer-toggles {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .layer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .layer-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .legend {
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+        
+        .legend h3 {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #666;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        .status-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 10px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 12px;
+            z-index: 1;
+        }
+        
+        .status-bar.loading { background: #fff3cd; }
+        .status-bar.error { background: #f8d7da; color: #721c24; }
+        .status-bar.success { background: #d4edda; color: #155724; }
+        
+        .report-btn {
+            width: 100%;
+            padding: 10px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .report-btn:hover { background: #d32f2f; }
+        .report-btn.active { background: #4CAF50; }
+        
+        .instructions {
+            font-size: 11px;
+            color: #666;
+            background: #f0f0f0;
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .instructions.visible { display: block; }
+
+        /* Popup styles */
+        .mapboxgl-popup-content {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .popup-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .popup-severity {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        /* Report form modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.visible { display: flex; }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        
+        .modal-content h3 { margin-bottom: 15px; }
+        
+        .modal-content label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .modal-content select,
+        .modal-content textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-cancel { background: #ccc; }
+        .btn-submit { background: #4CAF50; color: white; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="control-panel">
+        <h2>🌊 Control de Inundaciones</h2>
+        
+        <div class="toggle-container">
+            <span class="rain-icon">🌧️</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="rainingToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Está lloviendo</span>
+        </div>
+        
+        <div class="layer-toggles">
+            <label class="layer-toggle">
+                <input type="checkbox" id="heatmapToggle" checked>
+                <span>Mostrar mapa de calor</span>
+            </label>
+            <label class="layer-toggle">
+                <input type="checkbox" id="reportsToggle" checked>
+                <span>Mostrar reportes</span>
+            </label>
+        </div>
+        
+        <button class="report-btn" id="reportBtn">📍 Reportar Inundación</button>
+        <div class="instructions" id="instructions">
+            Haz clic en el mapa para marcar el punto de inundación
+        </div>
+        
+        <div class="legend">
+            <h3>Nivel de Riesgo</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00ff00;"></div>
+                <span>Bajo (&lt;0.3)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffff00;"></div>
+                <span>Medio (0.3-0.6)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff6600;"></div>
+                <span>Alto (0.6-0.8)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff0000;"></div>
+                <span>Severo (&gt;0.8)</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status-bar" id="statusBar">Cargando mapa...</div>
+    
+    <!-- Report Modal -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content">
+            <h3>📍 Nuevo Reporte</h3>
+            <p id="reportCoords" style="font-size: 12px; color: #666; margin-bottom: 12px;"></p>
+            
+            <label>Severidad:</label>
+            <select id="reportSeverity">
+                <option value="LEVE">🟡 Leve - Encharcamiento</option>
+                <option value="MODERADO" selected>🟠 Moderado - Calle inundada</option>
+                <option value="SEVERO">🔴 Severo - Inundación peligrosa</option>
+            </select>
+            
+            <label>Descripción (opcional):</label>
+            <textarea id="reportDescription" rows="3" placeholder="Ej: Agua hasta la rodilla, calle cerrada..."></textarea>
+            
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn-submit" onclick="submitReport()">Enviar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIGURATION - Replace with your Mapbox token
+        // =====================================================
+        mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN_HERE';
+        
+        const API_BASE = 'http://localhost:8080/api/flood';
+        
+        // =====================================================
+        // MAP INITIALIZATION
+        // =====================================================
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11',  // Dark style works best with heatmap
+            center: [-99.1332, 19.4326],  // CDMX center (Zócalo)
+            zoom: 11
+        });
+
+        // State
+        let isRaining = false;
+        let isReportMode = false;
+        let pendingReportCoords = null;
+
+        // =====================================================
+        // MAP LOAD - Add sources and layers
+        // =====================================================
+        map.on('load', () => {
+            setStatus('Cargando datos de inundación...', 'loading');
+            
+            // Add flood risk grid source (heatmap)
+            map.addSource('flood-risk', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+            
+            // Add flood reports source (points)
+            map.addSource('flood-reports', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+
+            // =====================================================
+            // HEATMAP LAYER - Flood risk visualization
+            // =====================================================
+            map.addLayer({
+                id: 'flood-heatmap',
+                type: 'heatmap',
+                source: 'flood-risk',
+                paint: {
+                    // Weight based on risk value
+                    'heatmap-weight': [
+                        'interpolate', ['linear'],
+                        ['get', 'risk'],
+                        0, 0,
+                        0.3, 0.3,
+                        0.6, 0.6,
+                        1, 1
+                    ],
+                    // Intensity increases with zoom
+                    'heatmap-intensity': [
+                        'interpolate', ['linear'],
+                        ['zoom'],
+                        9, 0.5,
+                        12, 1,
+                        15, 1.5
+                    ],
+                    // Color ramp from green (safe) to red (danger)
+                    'heatmap-color': [
+                        'interpolate', ['linear'],
+                        ['heatmap-density'],
+                        0, 'rgba(0, 255, 0, 0)',
+                        0.2, 'rgba(0, 255, 0, 0.4)',
+                        0.4, 'rgba(255, 255, 0, 0.6)',
+                        0.6, 'rgba(255, 165, 0, 0.7)',
+                        0.8, 'rgba(255, 69, 0, 0.8)',
+                        1, 'rgba(255, 0, 0, 0.9)'
+                    ],
+                    // Radius increases with zoom
+                    'heatmap-radius': [
+                        'interpolate', ['linear'],
+                        ['zoom'],
+                        9, 20,
+                        12, 30,
+                        15, 50
+                    ],
+                    // Opacity based on zoom
+                    'heatmap-opacity': 0.8
+                }
+            });
+
+            // =====================================================
+            // REPORTS LAYER - User-submitted flood reports
+            // =====================================================
+            map.addLayer({
+                id: 'flood-reports-circle',
+                type: 'circle',
+                source: 'flood-reports',
+                paint: {
+                    'circle-radius': ['get', 'radius'],
+                    'circle-color': ['get', 'color'],
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#fff',
+                    'circle-opacity': 0.8
+                }
+            });
+
+            // =====================================================
+            // INTERACTIONS
+            // =====================================================
+            
+            // Click on report to show popup
+            map.on('click', 'flood-reports-circle', (e) => {
+                if (isReportMode) return;
+                
+                const props = e.features[0].properties;
+                const coords = e.features[0].geometry.coordinates;
+                
+                new mapboxgl.Popup()
+                    .setLngLat(coords)
+                    .setHTML(`
+                        <div class="popup-title">Reporte de Inundación</div>
+                        <div class="popup-severity" style="background: ${props.color}">${props.severity}</div>
+                        <p>${props.description || 'Sin descripción'}</p>
+                        <p><small>👍 ${props.upvotes} confirmaciones</small></p>
+                        <button onclick="upvoteReport(${props.id})" style="margin-top: 8px; padding: 5px 10px; cursor: pointer;">
+                            👍 Confirmar
+                        </button>
+                    `)
+                    .addTo(map);
+            });
+
+            // Cursor changes
+            map.on('mouseenter', 'flood-reports-circle', () => {
+                if (!isReportMode) map.getCanvas().style.cursor = 'pointer';
+            });
+            map.on('mouseleave', 'flood-reports-circle', () => {
+                map.getCanvas().style.cursor = isReportMode ? 'crosshair' : '';
+            });
+
+            // Click on map for new report
+            map.on('click', (e) => {
+                if (!isReportMode) return;
+                
+                pendingReportCoords = e.lngLat;
+                document.getElementById('reportCoords').textContent = 
+                    `📍 ${e.lngLat.lat.toFixed(5)}, ${e.lngLat.lng.toFixed(5)}`;
+                document.getElementById('reportModal').classList.add('visible');
+            });
+
+            // Initial data load
+            loadFloodData();
+            setStatus('Mapa cargado correctamente', 'success');
+        });
+
+        // =====================================================
+        // DATA LOADING FUNCTIONS
+        // =====================================================
+        async function loadFloodData() {
+            await Promise.all([
+                loadRiskGrid(),
+                loadReports()
+            ]);
+        }
+
+        async function loadRiskGrid() {
+            try {
+                const response = await fetch(`${API_BASE}/geojson/grid?raining=${isRaining}`);
+                const data = await response.json();
+                map.getSource('flood-risk').setData(data);
+                console.log(`Loaded ${data.features.length} risk points, raining: ${isRaining}`);
+            } catch (error) {
+                console.error('Error loading risk grid:', error);
+                setStatus('Error cargando datos de riesgo', 'error');
+            }
+        }
+
+        async function loadReports() {
+            try {
+                const response = await fetch(`${API_BASE}/geojson/reports`);
+                const data = await response.json();
+                map.getSource('flood-reports').setData(data);
+                console.log(`Loaded ${data.features.length} reports`);
+            } catch (error) {
+                console.error('Error loading reports:', error);
+            }
+        }
+
+        // =====================================================
+        // REPORT FUNCTIONS
+        // =====================================================
+        async function submitReport() {
+            if (!pendingReportCoords) return;
+            
+            const report = {
+                lat: pendingReportCoords.lat,
+                lng: pendingReportCoords.lng,
+                severity: document.getElementById('reportSeverity').value,
+                description: document.getElementById('reportDescription').value || null
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/reports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(report)
+                });
+                
+                if (response.ok) {
+                    setStatus('Reporte enviado correctamente', 'success');
+                    closeModal();
+                    loadReports();
+                    // If raining, reload risk grid to include new report
+                    if (isRaining) loadRiskGrid();
+                } else {
+                    throw new Error('Error al enviar');
+                }
+            } catch (error) {
+                setStatus('Error al enviar reporte', 'error');
+            }
+        }
+
+        async function upvoteReport(id) {
+            try {
+                await fetch(`${API_BASE}/reports/${id}/upvote`, { method: 'POST' });
+                loadReports();
+                setStatus('Reporte confirmado', 'success');
+            } catch (error) {
+                setStatus('Error al confirmar', 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('reportModal').classList.remove('visible');
+            document.getElementById('reportDescription').value = '';
+            pendingReportCoords = null;
+            toggleReportMode(false);
+        }
+
+        function toggleReportMode(enable) {
+            isReportMode = enable;
+            const btn = document.getElementById('reportBtn');
+            const instructions = document.getElementById('instructions');
+            
+            if (enable) {
+                btn.textContent = '❌ Cancelar';
+                btn.classList.add('active');
+                instructions.classList.add('visible');
+                map.getCanvas().style.cursor = 'crosshair';
+            } else {
+                btn.textContent = '📍 Reportar Inundación';
+                btn.classList.remove('active');
+                instructions.classList.remove('visible');
+                map.getCanvas().style.cursor = '';
+            }
+        }
+
+        // =====================================================
+        // UI HELPERS
+        // =====================================================
+        function setStatus(message, type = '') {
+            const bar = document.getElementById('statusBar');
+            bar.textContent = message;
+            bar.className = 'status-bar ' + type;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    bar.textContent = isRaining ? '🌧️ Modo lluvia activo' : '☀️ Sin lluvia';
+                    bar.className = 'status-bar';
+                }, 2000);
+            }
+        }
+
+        // =====================================================
+        // EVENT LISTENERS
+        // =====================================================
+        document.getElementById('rainingToggle').addEventListener('change', (e) => {
+            isRaining = e.target.checked;
+            setStatus(isRaining ? 'Activando modo lluvia...' : 'Desactivando modo lluvia...', 'loading');
+            loadRiskGrid();
+        });
+
+        document.getElementById('heatmapToggle').addEventListener('change', (e) => {
+            map.setLayoutProperty('flood-heatmap', 'visibility', e.target.checked ? 'visible' : 'none');
+        });
+
+        document.getElementById('reportsToggle').addEventListener('change', (e) => {
+            map.setLayoutProperty('flood-reports-circle', 'visibility', e.target.checked ? 'visible' : 'none');
+        });
+
+        document.getElementById('reportBtn').addEventListener('click', () => {
+            toggleReportMode(!isReportMode);
+        });
+
+        // Close modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // =====================================================
+        // AUTO-REFRESH (optional - every 30 seconds)
+        // =====================================================
+        // setInterval(loadFloodData, 30000);
+    </script>
+</body>
+</html>

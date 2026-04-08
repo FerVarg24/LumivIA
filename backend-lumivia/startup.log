@@ -1,0 +1,52 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-04-07T22:46:53.553-06:00  INFO 41863 --- [lumivia-backend] [           main] com.lumivia.LumiviaBackendApplication    : Starting LumiviaBackendApplication using Java 17.0.12 with PID 41863 (/Users/chump/Documents/Proyectos/lumivia/backend-lumivia/build/classes/java/main started by chump in /Users/chump/Documents/Proyectos/lumivia/backend-lumivia)
+2026-04-07T22:46:53.557-06:00  INFO 41863 --- [lumivia-backend] [           main] com.lumivia.LumiviaBackendApplication    : The following 1 profile is active: "dev"
+2026-04-07T22:46:55.138-06:00  INFO 41863 --- [lumivia-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-07T22:46:55.271-06:00  INFO 41863 --- [lumivia-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 115 ms. Found 3 JPA repository interfaces.
+2026-04-07T22:46:56.887-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-04-07T22:46:56.920-06:00  INFO 41863 --- [lumivia-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-07T22:46:56.920-06:00  INFO 41863 --- [lumivia-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+2026-04-07T22:46:57.141-06:00  INFO 41863 --- [lumivia-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-07T22:46:57.149-06:00  INFO 41863 --- [lumivia-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3463 ms
+2026-04-07T22:46:57.269-06:00  INFO 41863 --- [lumivia-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-07T22:46:57.775-06:00  INFO 41863 --- [lumivia-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:lumivia user=SA
+2026-04-07T22:46:57.778-06:00  INFO 41863 --- [lumivia-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-07T22:46:57.802-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:lumivia'
+2026-04-07T22:46:58.155-06:00  INFO 41863 --- [lumivia-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-07T22:46:58.408-06:00  INFO 41863 --- [lumivia-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-04-07T22:46:58.487-06:00  INFO 41863 --- [lumivia-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-07T22:46:59.319-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-07T22:47:01.135-06:00  INFO 41863 --- [lumivia-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-07T22:47:01.240-06:00  INFO 41863 --- [lumivia-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-07T22:47:13.768-06:00  INFO 41863 --- [lumivia-backend] [           main] com.lumivia.flood.ElevationService       : ElevationService habilitado con DEM ./data/elevation/cdmx_dem.tif. Tamano: 8414x6401. Rango elevacion: 2225m - 3679m
+2026-04-07T22:47:13.818-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-07T22:47:14.900-06:00  INFO 41863 --- [lumivia-backend] [           main] com.lumivia.flood.FloodRiskService       : FloodRiskService inicializado: elevationWeight=0.4, reportWeight=0.6, threshold=0.5
+2026-04-07T22:47:18.560-06:00  INFO 41863 --- [lumivia-backend] [           main] c.g.routing.ch.CHPreparationHandler      : There are no CHs to prepare
+2026-04-07T22:47:18.566-06:00  INFO 41863 --- [lumivia-backend] [           main] com.graphhopper.GraphHopper              : version 9.1|2024-05-05T15:51:26Z (9,22,6,5,2,9)
+2026-04-07T22:47:18.585-06:00  INFO 41863 --- [lumivia-backend] [           main] com.graphhopper.GraphHopper              : graph |RAM_STORE|2D|no_turn_cost|nodes:9,edges:22,geometry:6,location_index:5,string_index:2,nodesCH:0,shortcuts:9, details:edges: 2,010,114(77MB), nodes: 1,584,466(19MB), bounds: -100.4236392,-97.8010144,18.6097896,20.1616524, name:(9MB), geo:6,037,712(24MB)
+2026-04-07T22:47:18.586-06:00  INFO 41863 --- [lumivia-backend] [           main] com.lumivia.routing.RouteService         : Routing habilitado con OSM ./data/cdmx.osm.pbf y cache ./data/graph-cache
+2026-04-07T22:47:19.861-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-04-07T22:47:19.864-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-04-07T22:47:19.864-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@4dc74211]]
+2026-04-07T22:47:19.865-06:00  INFO 41863 --- [lumivia-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-04-07T22:47:19.879-06:00  INFO 41863 --- [lumivia-backend] [           main] com.lumivia.LumiviaBackendApplication    : Started LumiviaBackendApplication in 27.092 seconds (process running for 27.93)
+2026-04-07T22:47:45.967-06:00  INFO 41863 --- [lumivia-backend] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-04-07T22:47:45.967-06:00  INFO 41863 --- [lumivia-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-04-07T22:47:45.969-06:00  INFO 41863 --- [lumivia-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-04-07T22:48:19.815-06:00  INFO 41863 --- [lumivia-backend] [MessageBroker-5] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 1, completed tasks = 60]
+2026-04-07T23:18:19.839-06:00  INFO 41863 --- [lumivia-backend] [MessageBroker-3] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 1, completed tasks = 1861]

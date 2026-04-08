@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LumivIA WebSocket Test</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --border: #374151;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, var(--panel) 0%, #0b1220 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    h1 { margin: 0 0 12px; font-size: 24px; }
+    h2 { margin: 0 0 10px; font-size: 18px; }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    input, select, button, textarea {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    input, select { min-width: 180px; }
+
+    button { cursor: pointer; }
+    button.primary { border-color: #16a34a; background: #14532d; }
+    button.danger { border-color: #b91c1c; background: #450a0a; }
+
+    .status {
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .status.ok { color: var(--accent); }
+    .status.err { color: var(--danger); }
+
+    .log {
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      font-family: Consolas, "Courier New", monospace;
+      line-height: 1.4;
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .hint { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>LumivIA - Prueba WebSocket</h1>
+      <div class="row">
+        <label>URL WS:</label>
+        <input id="wsUrl" value="/ws" />
+        <button id="connectBtn" class="primary">Conectar</button>
+        <button id="disconnectBtn" class="danger">Desconectar</button>
+        <span id="connStatus" class="status">Desconectado</span>
+      </div>
+      <p class="hint">Se suscribe a <code>/topic/camaras</code>. El backend ahora emite solo cuando llega una deteccion nueva.</p>
+    </div>
+
+    <div class="card">
+      <h2>Enviar deteccion de prueba</h2>
+      <div class="grid">
+        <input id="camara" value="camara_insurgentes_reforma" placeholder="camara" />
+        <select id="tipo">
+          <option value="auto">auto</option>
+          <option value="moto">moto</option>
+          <option value="camion">camion</option>
+          <option value="bici">bici</option>
+          <option value="peaton">peaton</option>
+        </select>
+        <input id="color" value="#FF0000" placeholder="#RRGGBB" />
+        <input id="segundos" type="number" step="0.1" min="0.1" value="4.2" placeholder="segundos" />
+      </div>
+      <div class="row" style="margin-top: 10px;">
+        <button id="sendDetectionBtn" class="primary">POST /api/vehiculos/deteccion</button>
+        <button id="loadCamerasBtn">Cargar camaras</button>
+      </div>
+      <p class="hint">Cada POST genera un solo evento con <code>vehiculo_nuevo</code>. No hay emisiones periodicas por scheduler.</p>
+    </div>
+
+    <div class="card">
+      <h2>Eventos</h2>
+      <p class="hint">Tip: revisa <code>vehiculo_nuevo.id</code> (UUID) y <code>vehiculo_nuevo.ttl</code> inicial.</p>
+      <textarea id="log" class="log" readonly></textarea>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script>
+    const wsUrlInput = document.getElementById('wsUrl');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const connStatus = document.getElementById('connStatus');
+    const logEl = document.getElementById('log');
+    const sendDetectionBtn = document.getElementById('sendDetectionBtn');
+    const loadCamerasBtn = document.getElementById('loadCamerasBtn');
+
+    const camaraEl = document.getElementById('camara');
+    const tipoEl = document.getElementById('tipo');
+    const colorEl = document.getElementById('color');
+    const segundosEl = document.getElementById('segundos');
+
+    let stompClient = null;
+    let subscription = null;
+
+    function nowIso() {
+      return new Date().toISOString();
+    }
+
+    function appendLog(title, payload) {
+      const msg = `[${new Date().toLocaleTimeString()}] ${title}\n${typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2)}\n\n`;
+      logEl.value = msg + logEl.value;
+    }
+
+    function setStatus(text, kind) {
+      connStatus.textContent = text;
+      connStatus.className = `status ${kind || ''}`;
+    }
+
+    function connect() {
+      if (stompClient && stompClient.connected) {
+        appendLog('Info', 'Ya existe una conexion activa.');
+        return;
+      }
+
+      const socket = new SockJS(wsUrlInput.value || '/ws');
+      stompClient = Stomp.over(socket);
+      stompClient.debug = null;
+
+      stompClient.connect({}, () => {
+        setStatus('Conectado', 'ok');
+        appendLog('WS conectado', 'Suscribiendo a /topic/camaras');
+
+        subscription = stompClient.subscribe('/topic/camaras', (frame) => {
+          try {
+            appendLog('Evento /topic/camaras', JSON.parse(frame.body));
+          } catch (_) {
+            appendLog('Evento /topic/camaras (raw)', frame.body);
+          }
+        });
+      }, (error) => {
+        setStatus('Error de conexion', 'err');
+        appendLog('WS error', String(error));
+      });
+    }
+
+    function disconnect() {
+      if (subscription) {
+        subscription.unsubscribe();
+        subscription = null;
+      }
+      if (stompClient) {
+        stompClient.disconnect(() => {
+          setStatus('Desconectado', '');
+          appendLog('WS desconectado', 'Conexion cerrada.');
+        });
+      } else {
+        setStatus('Desconectado', '');
+      }
+      stompClient = null;
+    }
+
+    async function sendDetection() {
+      const payload = {
+        camara: camaraEl.value,
+        timestamp: nowIso(),
+        tipo: tipoEl.value,
+        color: colorEl.value,
+        segundos_en_pantalla: Number(segundosEl.value)
+      };
+
+      try {
+        const response = await fetch('/api/vehiculos/deteccion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const body = await response.json();
+        appendLog(`POST /api/vehiculos/deteccion -> ${response.status}`, body);
+      } catch (error) {
+        appendLog('Error POST deteccion', String(error));
+      }
+    }
+
+    async function loadCameras() {
+      try {
+        const response = await fetch('/api/camaras');
+        const cameras = await response.json();
+        appendLog(`GET /api/camaras -> ${response.status}`, cameras);
+        if (Array.isArray(cameras) && cameras.length > 0) {
+          camaraEl.value = cameras[0].nombre;
+        }
+      } catch (error) {
+        appendLog('Error GET camaras', String(error));
+      }
+    }
+
+    connectBtn.addEventListener('click', connect);
+    disconnectBtn.addEventListener('click', disconnect);
+    sendDetectionBtn.addEventListener('click', sendDetection);
+    loadCamerasBtn.addEventListener('click', loadCameras);
+  </script>
+</body>
+</html>

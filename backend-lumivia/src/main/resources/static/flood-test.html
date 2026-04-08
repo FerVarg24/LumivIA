@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LumivIA - Test de Inundaciones</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            color: #00d9ff;
+            margin-bottom: 30px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #00d9ff;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 1rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        button {
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #00d9ff, #0099cc);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,217,255,0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .result.success {
+            border-left: 3px solid #00ff88;
+        }
+        .result.error {
+            border-left: 3px solid #ff4466;
+        }
+        .risk-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .risk-bajo { background: #00ff88; color: #000; }
+        .risk-medio { background: #ffaa00; color: #000; }
+        .risk-alto { background: #ff4466; color: #fff; }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .checkbox-group input {
+            width: auto;
+        }
+        .quick-locations {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .quick-btn {
+            padding: 6px 12px;
+            background: rgba(0,217,255,0.2);
+            border: 1px solid rgba(0,217,255,0.4);
+            border-radius: 4px;
+            color: #00d9ff;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 0;
+            width: auto;
+        }
+        .quick-btn:hover {
+            background: rgba(0,217,255,0.3);
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .reports-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .report-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .report-item .severity {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .severity-LEVE { background: #00ff88; color: #000; }
+        .severity-MODERADO { background: #ffaa00; color: #000; }
+        .severity-SEVERO { background: #ff4466; color: #fff; }
+    </style>
+</head>
+<body>
+    <h1>🌧️ LumivIA - Test de Inundaciones</h1>
+    
+    <div class="container">
+        <!-- Consultar Riesgo -->
+        <div class="card">
+            <h2>📍 Consultar Riesgo de Inundación</h2>
+            <label>Latitud</label>
+            <input type="number" id="risk-lat" value="19.4326" step="0.0001">
+            <label>Longitud</label>
+            <input type="number" id="risk-lng" value="-99.1332" step="0.0001">
+            <div class="checkbox-group">
+                <input type="checkbox" id="risk-raining" checked>
+                <label for="risk-raining" style="margin: 0;">¿Está lloviendo?</label>
+            </div>
+            <div class="quick-locations">
+                <button class="quick-btn" onclick="setLocation(19.4326, -99.1332, 'risk')">Insurgentes/Reforma</button>
+                <button class="quick-btn" onclick="setLocation(19.3441, -99.1398, 'risk')">Tlalpan/Taxqueña</button>
+                <button class="quick-btn" onclick="setLocation(19.4105, -99.1602, 'risk')">Viaducto</button>
+                <button class="quick-btn" onclick="setLocation(19.3322, -99.2045, 'risk')">Periférico Sur</button>
+            </div>
+            <button onclick="consultarRiesgo()">Consultar Riesgo</button>
+            <div id="risk-result" class="result"></div>
+        </div>
+
+        <!-- Crear Reporte -->
+        <div class="card">
+            <h2>🚨 Reportar Inundación</h2>
+            <label>Latitud</label>
+            <input type="number" id="report-lat" value="19.4326" step="0.0001">
+            <label>Longitud</label>
+            <input type="number" id="report-lng" value="-99.1332" step="0.0001">
+            <label>Severidad</label>
+            <select id="report-severity">
+                <option value="LEVE">Leve - Charcos, paso posible</option>
+                <option value="MODERADO" selected>Moderado - Agua en calles, precaución</option>
+                <option value="SEVERO">Severo - Inundación grave, evitar zona</option>
+            </select>
+            <label>Descripción (opcional)</label>
+            <input type="text" id="report-desc" placeholder="Ej: Agua hasta las rodillas en esquina">
+            <div class="quick-locations">
+                <button class="quick-btn" onclick="setLocation(19.4326, -99.1332, 'report')">Insurgentes/Reforma</button>
+                <button class="quick-btn" onclick="setLocation(19.3441, -99.1398, 'report')">Tlalpan/Taxqueña</button>
+                <button class="quick-btn" onclick="setLocation(19.4105, -99.1602, 'report')">Viaducto</button>
+            </div>
+            <button onclick="crearReporte()">Enviar Reporte</button>
+            <div id="report-result" class="result"></div>
+        </div>
+
+        <!-- Listar Reportes -->
+        <div class="card">
+            <h2>📋 Reportes Activos</h2>
+            <button onclick="listarReportes()">Actualizar Lista</button>
+            <div id="reports-list" class="result reports-list"></div>
+        </div>
+
+        <!-- Calcular Ruta -->
+        <div class="card">
+            <h2>🗺️ Calcular Ruta</h2>
+            <label>Origen - Latitud</label>
+            <input type="number" id="route-orig-lat" value="19.432" step="0.0001">
+            <label>Origen - Longitud</label>
+            <input type="number" id="route-orig-lng" value="-99.133" step="0.0001">
+            <label>Destino - Latitud</label>
+            <input type="number" id="route-dest-lat" value="19.42" step="0.0001">
+            <label>Destino - Longitud</label>
+            <input type="number" id="route-dest-lng" value="-99.17" step="0.0001">
+            <label>Perfil</label>
+            <select id="route-profile">
+                <option value="CONDUCTOR">Conductor (evita inundaciones)</option>
+                <option value="PEATON">Peatón (evita emisiones)</option>
+                <option value="COMBINADA">Combinada (ambos)</option>
+            </select>
+            <div class="checkbox-group">
+                <input type="checkbox" id="route-raining" checked>
+                <label for="route-raining" style="margin: 0;">¿Está lloviendo? (activa modo inundaciones)</label>
+            </div>
+            <button onclick="calcularRuta()">Calcular Ruta</button>
+            <div id="route-result" class="result"></div>
+        </div>
+
+        <!-- Log de Actividad -->
+        <div class="card full-width">
+            <h2>📜 Log de Actividad</h2>
+            <button onclick="document.getElementById('activity-log').innerHTML = ''">Limpiar Log</button>
+            <div id="activity-log" class="result" style="max-height: 200px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('activity-log');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff4466' : type === 'success' ? '#00ff88' : '#00d9ff';
+            logEl.innerHTML = `<span style="color: ${color}">[${time}]</span> ${message}\n` + logEl.innerHTML;
+        }
+
+        function setLocation(lat, lng, prefix) {
+            document.getElementById(`${prefix}-lat`).value = lat;
+            document.getElementById(`${prefix}-lng`).value = lng;
+        }
+
+        async function consultarRiesgo() {
+            const lat = document.getElementById('risk-lat').value;
+            const lng = document.getElementById('risk-lng').value;
+            const raining = document.getElementById('risk-raining').checked;
+            const resultEl = document.getElementById('risk-result');
+
+            log(`Consultando riesgo en (${lat}, ${lng}), lloviendo: ${raining}`);
+
+            try {
+                const res = await fetch(`${API_BASE}/flood/risk?lat=${lat}&lng=${lng}&raining=${raining}`);
+                const data = await res.json();
+                
+                if (res.ok) {
+                    const riskClass = `risk-${data.nivel_riesgo}`;
+                    resultEl.innerHTML = `<strong>Riesgo:</strong> ${(data.risk * 100).toFixed(1)}%
+<span class="risk-indicator ${riskClass}">${data.nivel_riesgo.toUpperCase()}</span>
+
+<strong>Descripción:</strong> ${data.descripcion}
+
+<strong>Coordenadas:</strong> (${data.lat}, ${data.lng})`;
+                    resultEl.className = 'result success';
+                    log(`Riesgo: ${data.nivel_riesgo} (${(data.risk * 100).toFixed(1)}%)`, 'success');
+                } else {
+                    resultEl.textContent = JSON.stringify(data, null, 2);
+                    resultEl.className = 'result error';
+                    log(`Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                resultEl.textContent = `Error: ${e.message}`;
+                resultEl.className = 'result error';
+                log(`Error de conexión: ${e.message}`, 'error');
+            }
+        }
+
+        async function crearReporte() {
+            const lat = parseFloat(document.getElementById('report-lat').value);
+            const lng = parseFloat(document.getElementById('report-lng').value);
+            const severity = document.getElementById('report-severity').value;
+            const description = document.getElementById('report-desc').value;
+            const resultEl = document.getElementById('report-result');
+
+            log(`Creando reporte: ${severity} en (${lat}, ${lng})`);
+
+            try {
+                const body = { lat, lng, severity };
+                if (description) body.description = description;
+
+                const res = await fetch(`${API_BASE}/flood/reports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    resultEl.innerHTML = `<strong>✅ Reporte creado!</strong>
+
+ID: ${data.id}
+Severidad: ${data.severity}
+Expira: ${new Date(data.expires_at).toLocaleString()}
+Upvotes: ${data.upvotes}`;
+                    resultEl.className = 'result success';
+                    log(`Reporte #${data.id} creado exitosamente`, 'success');
+                    listarReportes(); // Actualizar lista
+                } else {
+                    resultEl.textContent = JSON.stringify(data, null, 2);
+                    resultEl.className = 'result error';
+                    log(`Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                resultEl.textContent = `Error: ${e.message}`;
+                resultEl.className = 'result error';
+                log(`Error de conexión: ${e.message}`, 'error');
+            }
+        }
+
+        async function listarReportes() {
+            const resultEl = document.getElementById('reports-list');
+            log('Obteniendo reportes activos...');
+
+            try {
+                const res = await fetch(`${API_BASE}/flood/reports`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    if (data.length === 0) {
+                        resultEl.innerHTML = '<em>No hay reportes activos</em>';
+                    } else {
+                        resultEl.innerHTML = data.map(r => `
+<div class="report-item">
+    <div>
+        <strong>#${r.id}</strong> (${r.lat.toFixed(4)}, ${r.lng.toFixed(4)})
+        ${r.description ? `<br><small>${r.description}</small>` : ''}
+    </div>
+    <div>
+        <span class="severity severity-${r.severity}">${r.severity}</span>
+        <br><small>👍 ${r.upvotes}</small>
+        <button class="quick-btn" onclick="upvoteReporte(${r.id})" style="margin-left: 5px;">+1</button>
+    </div>
+</div>`).join('');
+                    }
+                    resultEl.className = 'result success';
+                    log(`${data.length} reportes activos`, 'success');
+                } else {
+                    resultEl.textContent = JSON.stringify(data, null, 2);
+                    resultEl.className = 'result error';
+                }
+            } catch (e) {
+                resultEl.textContent = `Error: ${e.message}`;
+                resultEl.className = 'result error';
+                log(`Error de conexión: ${e.message}`, 'error');
+            }
+        }
+
+        async function upvoteReporte(id) {
+            log(`Upvoting reporte #${id}...`);
+            try {
+                const res = await fetch(`${API_BASE}/flood/reports/${id}/upvote`, { method: 'POST' });
+                if (res.ok) {
+                    log(`Upvote exitoso para reporte #${id}`, 'success');
+                    listarReportes();
+                } else {
+                    const data = await res.json();
+                    log(`Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                log(`Error de conexión: ${e.message}`, 'error');
+            }
+        }
+
+        async function calcularRuta() {
+            const origLat = parseFloat(document.getElementById('route-orig-lat').value);
+            const origLng = parseFloat(document.getElementById('route-orig-lng').value);
+            const destLat = parseFloat(document.getElementById('route-dest-lat').value);
+            const destLng = parseFloat(document.getElementById('route-dest-lng').value);
+            const perfil = document.getElementById('route-profile').value;
+            const raining = document.getElementById('route-raining').checked;
+            const resultEl = document.getElementById('route-result');
+
+            log(`Calculando ruta ${perfil}, lloviendo: ${raining}`);
+
+            try {
+                const body = {
+                    origen: { lat: origLat, lng: origLng },
+                    destino: { lat: destLat, lng: destLng },
+                    perfil,
+                    raining
+                };
+
+                const res = await fetch(`${API_BASE}/ruta`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    const rainIcon = data.raining ? '🌧️' : '☀️';
+                    resultEl.innerHTML = `<strong>${rainIcon} Modo lluvia: ${data.raining ? 'ACTIVO' : 'INACTIVO'}</strong>
+
+<strong>🚗 Ruta Rápida:</strong>
+  Distancia: ${data.ruta_rapida.distancia_km} km
+  Tiempo: ${data.ruta_rapida.tiempo_estimado_min} min
+  Riesgo: ${data.ruta_rapida.nivel_riesgo}
+  ${data.ruta_rapida.descripcion}
+
+<strong>💚 Ruta Saludable:</strong>
+  Distancia: ${data.ruta_saludable.distancia_km} km
+  Tiempo: ${data.ruta_saludable.tiempo_estimado_min} min
+  Riesgo: ${data.ruta_saludable.nivel_riesgo}
+  ${data.ruta_saludable.descripcion}
+
+<strong>📊 Comparación:</strong>
+  Ahorro CO2: ${data.ahorro_co2} g
+  Tiempo extra: +${data.tiempo_extra_min} min`;
+                    resultEl.className = 'result success';
+                    log(`Ruta calculada: ${data.ruta_rapida.distancia_km}km`, 'success');
+                } else {
+                    resultEl.textContent = JSON.stringify(data, null, 2);
+                    resultEl.className = 'result error';
+                    log(`Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                resultEl.textContent = `Error: ${e.message}`;
+                resultEl.className = 'result error';
+                log(`Error de conexión: ${e.message}`, 'error');
+            }
+        }
+
+        // Cargar reportes al iniciar
+        window.onload = () => {
+            log('Página de pruebas cargada', 'success');
+            listarReportes();
+        };
+    </script>
+</body>
+</html>

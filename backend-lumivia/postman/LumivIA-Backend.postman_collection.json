@@ -1,0 +1,91 @@
+{
+  "info": {
+    "name": "LumivIA Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Coleccion base para probar camera, vehicle e history"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "camara", "value": "camara_insurgentes_reforma" },
+    { "key": "desde", "value": "2026-04-07T00:00:00Z" },
+    { "key": "hasta", "value": "2026-04-07T23:59:59Z" },
+    { "key": "origenLat", "value": "19.4326" },
+    { "key": "origenLng", "value": "-99.1332" },
+    { "key": "destinoLat", "value": "19.4500" },
+    { "key": "destinoLng", "value": "-99.1500" }
+  ],
+  "item": [
+    {
+      "name": "GET Camaras",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/camaras"
+      }
+    },
+    {
+      "name": "POST Deteccion Auto",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"camara\": \"{{camara}}\",\n  \"timestamp\": \"2026-04-07T10:23:45Z\",\n  \"tipo\": \"auto\",\n  \"color\": \"#FF0000\",\n  \"segundos_en_pantalla\": 4.2\n}"
+        },
+        "url": "{{baseUrl}}/api/vehiculos/deteccion"
+      }
+    },
+    {
+      "name": "GET Historial",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/historial?camara={{camara}}&desde={{desde}}&hasta={{hasta}}"
+      }
+    },
+    {
+      "name": "POST Ruta PEATON",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"origen\": {\"lat\": {{origenLat}}, \"lng\": {{origenLng}}},\n  \"destino\": {\"lat\": {{destinoLat}}, \"lng\": {{destinoLng}}},\n  \"perfil\": \"PEATON\"\n}"
+        },
+        "url": "{{baseUrl}}/api/ruta"
+      }
+    },
+    {
+      "name": "POST Ruta CONDUCTOR",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"origen\": {\"lat\": {{origenLat}}, \"lng\": {{origenLng}}},\n  \"destino\": {\"lat\": {{destinoLat}}, \"lng\": {{destinoLng}}},\n  \"perfil\": \"CONDUCTOR\"\n}"
+        },
+        "url": "{{baseUrl}}/api/ruta"
+      }
+    },
+    {
+      "name": "POST Ruta COMBINADA",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"origen\": {\"lat\": {{origenLat}}, \"lng\": {{origenLng}}},\n  \"destino\": {\"lat\": {{destinoLat}}, \"lng\": {{destinoLng}}},\n  \"perfil\": \"COMBINADA\"\n}"
+        },
+        "url": "{{baseUrl}}/api/ruta"
+      }
+    }
+  ]
+}

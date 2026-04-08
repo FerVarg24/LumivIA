@@ -1,0 +1,71 @@
+### Variables
+@baseUrl = http://localhost:8080
+@camara = camara_insurgentes_reforma
+@desde = 2026-04-07T00:00:00Z
+@hasta = 2026-04-07T23:59:59Z
+@origenLat = 19.4326
+@origenLng = -99.1332
+@destinoLat = 19.4500
+@destinoLng = -99.1500
+
+### Health quick check (camaras)
+GET {{baseUrl}}/api/camaras
+Accept: application/json
+
+### Registrar deteccion - auto
+POST {{baseUrl}}/api/vehiculos/deteccion
+Content-Type: application/json
+
+{
+  "camara": "{{camara}}",
+  "timestamp": "2026-04-07T10:23:45Z",
+  "tipo": "auto",
+  "color": "#FF0000",
+  "segundos_en_pantalla": 4.2
+}
+
+### Registrar deteccion - moto
+POST {{baseUrl}}/api/vehiculos/deteccion
+Content-Type: application/json
+
+{
+  "camara": "{{camara}}",
+  "timestamp": "2026-04-07T10:24:30Z",
+  "tipo": "moto",
+  "color": "#00FFFF",
+  "segundos_en_pantalla": 3.0
+}
+
+### Consultar historial por camara y rango
+GET {{baseUrl}}/api/historial?camara={{camara}}&desde={{desde}}&hasta={{hasta}}
+Accept: application/json
+
+### Calcular ruta - PEATON
+POST {{baseUrl}}/api/ruta
+Content-Type: application/json
+
+{
+  "origen": {"lat": {{origenLat}}, "lng": {{origenLng}}},
+  "destino": {"lat": {{destinoLat}}, "lng": {{destinoLng}}},
+  "perfil": "PEATON"
+}
+
+### Calcular ruta - CONDUCTOR
+POST {{baseUrl}}/api/ruta
+Content-Type: application/json
+
+{
+  "origen": {"lat": {{origenLat}}, "lng": {{origenLng}}},
+  "destino": {"lat": {{destinoLat}}, "lng": {{destinoLng}}},
+  "perfil": "CONDUCTOR"
+}
+
+### Calcular ruta - COMBINADA
+POST {{baseUrl}}/api/ruta
+Content-Type: application/json
+
+{
+  "origen": {"lat": {{origenLat}}, "lng": {{origenLng}}},
+  "destino": {"lat": {{destinoLat}}, "lng": {{destinoLng}}},
+  "perfil": "COMBINADA"
+}
