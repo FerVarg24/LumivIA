@@ -3,7 +3,7 @@
 <div align="center">
   <h1 align="center">LumivIA Backend</h1>
   <h1 align="center"><a href="https://github.com/CrXTrhx/LumivIA-F.git">Link a repositorio frontend</a></h1>
-  <h1 align="center"><a href="">Link a repositorio de computer vision</a></h1>
+  <h1 align="center"><a href="https://github.com/FerVarg24/LumivIA-ComputerVision.git">Link a repositorio de computer vision</a></h1>
   <p align="center">
     Plataforma backend para movilidad urbana inteligente en CDMX,
     con emisiones en tiempo real, ruteo saludable e inteligencia de riesgo por inundacion.
